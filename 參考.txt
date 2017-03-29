@@ -1,0 +1,6 @@
+telnet 傳送碼的 ascii 16進位
+http://donsnotes.com/tech/charsets/ascii.html#cntrl
+如: Ctrl+c=\x03, Ctrl+v=\x16
+
+\033OQ = F2
+\003   = Ctrl+c

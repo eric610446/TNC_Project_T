@@ -1,9 +1,13 @@
-#encoding=utf-8
+#-*- coding: utf-8 -*-
+#-*- coding: cp950 -*-
 import var
 import func
 
 
 if __name__=="__main__":
 	func.telnet_connect()
-	func.test(var.tn)
+	if func.menu():
+		print '§¹¦¨'
+	else:
+		print '¥¢±Ñ'
 

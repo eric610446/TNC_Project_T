@@ -4,3 +4,9 @@ http://donsnotes.com/tech/charsets/ascii.html#cntrl
 
 \033OQ = F2
 \003   = Ctrl+c
+\026   = Ctrl+v
+\033OA = up
+\033OB = down
+\033OD = left
+\033OC = right
+\b     = Backspace

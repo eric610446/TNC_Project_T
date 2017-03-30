@@ -50,18 +50,52 @@ def profile_user():
 	for user in user_num_1:
 		print user
 		cmd = ''
-		cmd += 'mgr -l GEA\r\nuser\r\nconsult\r\n\033OB\r\nshe\r\n\r\n\r\n\r\n\r\n\026\033OB\033OB'
+		cmd += var.gotousers+'consult\r\n\033OB\r\nshe\r\n\r\n\r\n\r\n\r\n\026\033OB\033OB'
 		cmd += user+'\026'
 		telnet_cmd( cmd )
 		cmd = '\003\003\003\003'
 		telnet_cmd( cmd )
 		result = var.tn.read_until('csa')
+		user_address = get_user_info(result,'address')
+		user_type = get_user_info(result,'type')
+		user_entity = get_user_info(result,'entity')
+		print 'addr: '+user_address
+		print 'type: '+user_type
+		print 'entity: '+user_entity
+
 
 	return 1
 
 
+def get_user_info(string,info):
+	result = ''
+	if info=='address':
+		tmp = string.split('Shelf Address : ')
+		tmp = tmp[1].split('[')
+		result += tmp[0][:-1]
+		tmp = string.split('Board Address : ')
+		tmp = tmp[1].split('[')
+		result += "-"+tmp[0][:-1]
+		tmp = string.split('Equipment Address : ')
+		tmp = tmp[1].split('[')
+		result += "-"+tmp[0][:-1]
+	if info=='type':
+		tmp = string.split('Set Type + ')
+		tmp = tmp[1].split('[')
+		result += tmp[0][:-1]
+	if info=='entity':
+		tmp = string.split('Entity Number : ')
+		tmp = tmp[1].split('[')
+		result += tmp[0][:-1]
 
+	return result
 
+def error_dectect(string):
+	result=0
+	tmp = string.split('no Such Object Instance')
+	if len(tmp)>1:
+		result = '¤À¾÷¸¹½X¿ù»~'
+	return result
 
 
 

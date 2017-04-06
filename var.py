@@ -19,6 +19,11 @@ goto_profile_create = 'mgr -l GEA\r\nprofile\r\ncreate\r\n'
 user_info_list = []
 # [ [user, address, type, entity], [user, address, type, entity], ... ]
 
-clear = '\b\b\b\b\b\b\b\b'
-up8 = '\033OA\033OA\033OA\033OA\033OA\033OA\033OA\033OA'
-down8 = '\033OB\033OB\033OB\033OB\033OB\033OB\033OB\033OB'
+e = '\r\n'
+c = '\003'
+v = '\026'
+u = '\033OA'
+d = '\033OB'
+l = '\033OD'
+r = '\033OC'
+b = '\b'

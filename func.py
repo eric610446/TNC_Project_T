@@ -41,6 +41,8 @@ def menu():
 	return 1
 
 def change_user_num():
+	# 引用全域變數
+	global e, c, v, u, d, l, r, b
 	# 讓使用者輸入分機號碼
 	var.profile_user_num_1 = raw_input("原來的分機號碼: ")
 	var.profile_user_num_2 = raw_input("修改後的分機號碼: ")
@@ -55,10 +57,10 @@ def change_user_num():
 	for user in user_num_1:
 		#print user
 		cmd = ''
-		cmd += var.gotousers+'consult\r\n\033OB\r\nshe\r\n\r\n\r\n\r\n\r\n\026\033OB\033OB'
-		cmd += user+'\026'
+		cmd += var.gotousers+'consult'+e+d+e+'she'+(e*5)+v+d+d
+		cmd += user+v
 		telnet_cmd( cmd )
-		cmd = '\003\003\003\003'
+		cmd = c*4
 		telnet_cmd( cmd )
 		result = var.tn.read_until('csa')
 		error = error_dectect(result)
@@ -81,40 +83,54 @@ def change_user_num():
 		user1_for_profile.append(user_info[0])
 		arr = [ user_info[2], user_info[3], user_info[1] ]
 		data_for_profile.append(arr)
-		profile_user( user1_for_profile, user_num_2, data_for_profile )
+	profile_user( user1_for_profile, user_num_2, data_for_profile )
 	return 1
 
 
-def profile_user( user1, user2, data='', key=''):
+def profile_user( user1, user2, data='', key='' ):
+	# 引用全域變數
+	global e, c, v, u, d, l, r, b
+
 	cmd = goto_profile_create
 	i = 0
 	for user in user1:
-		cmd += var.up8+var.up8+'\033OB'+clear+user
+		cmd += u*16+d+(b*8)+user
 		if data=='':
-			cmd+=var.down8
-			cmd+=clear+user2[i]
+			cmd+=u*8
+			cmd+=(b*8)+user2[i]
 		else:
-			cmd += '\033OB\033OB\033OB\r\n'+data[i][0]+'\r\n\033OB'+clear+data[i][1]
+			cmd += (d*3)+e+data[i][0]+e+d+(b*8)+data[i][1]
 			addr = data[i][2].split('-')
-			cmd += '\033OB'+clear+addr[0]+'\033OB'+clear+addr[1]+'\033OB'+clear+addr[2]
-			cmd += '\033OB'
-			cmd += clear+user2[i]+'\033OB'
+			cmd += d+(b*8)+addr[0]+d+(b*8)+addr[1]+d+(b*8)+addr[2]
+			cmd += d
+			cmd += (b*8)+user2[i]+d
 			if key=='':
-				cmd += clear+user2[i]
-
-
-
+				cmd += (b*8)+user2[i]
 
 		i += 1
 
 def setting_users_ports( user_port_list, tn ):
-	cmd = var.gotousers+'consult\r\n\033OB\r\nshe\r\n\r\n\r\n\026\033OB\033OB'
-	telnet_cmd( cmd, tn )
-	for user in user_port:
-		address = user[1].split('-')
-		cmd = clear+user[0]+'\026'+clear+address[0]+'\033OB'+clear+address[1]+'\033OB'+clear+address[2]+'\026\026'
+	# 引用全域變數
+	global e, c, v, u, d, l, r, b
 
-	cmd = '\003\003\003'
+	cmd = var.gotousers+'consult'+e+d+e+'she'+(e*3)+v+(d*2)
+	telnet_cmd( cmd, tn )
+	for user in user_port_list:
+		address = user[1].split('-')
+		cmd = b*8+user[0]+v+(b*8)+address[0]+d+(b*8)+address[1]+d+(b*8)+address[2]+v
+		telnet_cmd( cmd, tn )
+		try:
+			res = tn.read_until('succeeded', timeout=1)
+			cmd = v
+		except:
+			try:
+				res = tn.read_until('Invalid', timeout=1)
+				print '[-] '+user[0]+' 設定 address '+user[1]+' : Invalid physical address'
+			except EOFError as e:
+				print '[-] '+user[0]+' 設定 address '+user[1]+' timeout ERROR'
+		telnet_cmd( cmd, tn )
+
+	cmd = c*3
 	telnet_cmd( cmd, tn )
 	tn.read_until('csa')
 	var.tn = tn

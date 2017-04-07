@@ -13,14 +13,13 @@ def telnet_connect():
 	tn.read_until("csa>")
 	var.tn = tn
 
-def telnet_cmd(cmd_list, wait=0, tn=''):
+def telnet_cmd(cmd_list,tn=''):
 	if tn=='':
 		tn = var.tn
 	cmd_list = cmd_list.split(',')
 	for cmd in cmd_list:
 		tn.write(cmd)
-		if wait!=0:
-			time.sleep(wait)
+		time.sleep(0.01)
 	var.tn = tn
 
 def menu():
@@ -52,19 +51,14 @@ def change_user_num():
 		cmd += var.gotousers+'consult'+e+d+e+'she'+(e*5)+v+d+d
 		cmd += user+v
 		print '[+] 讀取 '+user+' 的資料'
-		wait = 0.001
-		telnet_cmd( cmd, wait )
+		telnet_cmd( cmd )
 		cmd = c*4
 		telnet_cmd( cmd )
-		result = detect_error('csa')
-		if not key_in_string('Shelf,Board,Equipment,Type,Entity', result):
-			print result
-			wait*=10
-			telnet_cmd( cmd, wait )
-			if wait>1:
-				print '[-] '+user+' 讀取資料錯誤'
-				continue
-
+		result = var.tn.read_until('csa')
+		error = error_dectect(result)
+		if error:
+			print '[-] '+user+' '+error
+			continue
 		user_address = get_user_info(result,'address')
 		user_type = get_user_info(result,'type')
 		user_entity = get_user_info(result,'entity')
@@ -207,60 +201,6 @@ def error_dectect(string):
 		result = '分機號碼錯誤'
 	return result
 
-def key_in_string(key_list,string):
-	key_list = key_list.split(',')
-	for key in key_list:
-		if key in string:
-			continue
-		else:
-			return 0
-	return 1
-
-def detect_error(key_list='', tn=''):
-	r = 0
-	if tn=='':
-		tn = var.tn
-	if key_list!='':
-		key_list = key_list.split(',')
-		for key in key_list:
-			try:
-				print key
-				r = tn.read_until(key, timeout=0.001)
-			except:
-				try:
-					print key
-					r= tn.read_until(key, timeout=0.01)
-				except:
-					try:
-						print key
-						r= tn.read_until(key, timeout=0.1)
-					except:
-						try:
-							print key
-							r= tn.read_until(key, timeout=1)
-						except:
-							try:
-								print key
-								tn.read_until('no Such Object', timeout=0.1)
-								print '[-] no Such Object'
-								return 1
-							except:
-								try:
-									print key
-									tn.read_until('Bad value', timeout=0.1)
-									print '[-] Bad value'
-									return 1
-								except:
-									try:
-										print key
-										tn.read_until('Invalid', timeout=0.1)
-										print '[-] Invalid'
-										return 1
-									except:
-										print key
-										print '[-] Timeout'
-										return 1
-	return r
 
 
 

@@ -27,3 +27,5 @@ d = '\033OB'
 l = '\033OD'
 r = '\033OC'
 b = '\b'
+page_end = 'qqj'
+

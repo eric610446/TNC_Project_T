@@ -13,13 +13,13 @@ def telnet_connect():
 	tn.read_until("csa>")
 	var.tn = tn
 
-def telnet_cmd(cmd_list,tn=''):
+def telnet_cmd(cmd_list, tn='', sleep=0):
 	if tn=='':
 		tn = var.tn
 	cmd_list = cmd_list.split(',')
 	for cmd in cmd_list:
 		tn.write(cmd)
-		time.sleep(0.01)
+		time.sleep(sleep)
 	var.tn = tn
 
 def menu():
@@ -34,37 +34,33 @@ def change_user_num():
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
 	# 讓使用者輸入分機號碼
-	var.profile_user_num_1 = raw_input("原來的分機號碼: ")
-	var.profile_user_num_2 = raw_input("修改後的分機號碼: ")
-	# 檢查輸入的分機號碼有沒有太誇大
-	debug = str(var.profile_user_num_1)+" "+str(var.profile_user_num_2)
-	if not user_num_debug(debug):
-		print '[-] 分機號碼輸入錯誤'
-		return 0
-	# 將輸入的原來的分機號碼，依照空格去分開，因為可以輸入多個分機，如: 100 101 ..
-	user_num_1 = var.profile_user_num_1.split(' ')
-	user_num_2 = var.profile_user_num_2.split(' ')
+	get_users_input()
+	user_num_1 = var.users_input_1
+	user_num_2 = var.users_input_2
+	# log
+	print '[*] user_num_1 : ',user_num_1
+	print '[*] user_num_2 : ',user_num_2
 	# 針對每一個分機去取得 address, type, entity 三個資料，並將原 user 的 address 設為 255-255-255
 	for user in user_num_1:
 		print '-------------------------------------------------'
-		cmd = ''
-		cmd += var.gotousers+'consult'+e+d+e+'she'+(e*5)+v+d+d
-		cmd += user+v
-		print '[+] 讀取 '+user+' 的資料'
-		telnet_cmd( cmd )
-		cmd = c*4
-		telnet_cmd( cmd )
-		result = var.tn.read_until('csa')
+
+		# 閱覽分機號碼設定
+		result = read_user_settings( user )
+		# 基本常遇到的錯誤訊息偵測
 		error = error_dectect(result)
 		if error:
 			print '[-] '+user+' '+error
 			continue
+
+		# 儲存分機設定參數
 		user_address = get_user_info(result,'address')
 		user_type = get_user_info(result,'type')
 		user_entity = get_user_info(result,'entity')
 		arr = [user,user_address,user_type,user_entity]
 		# 取得的資料存放在陣列中
 		var.user_info_list.append(arr)
+		print var.user_info_list
+
 		# 將要修改分機號碼的使用者 port 改為 255
 		user_port_list = []
 		user_port = [user,'255-255-255']
@@ -84,6 +80,40 @@ def change_user_num():
 	user_for_delete = user1_for_profile
 	delete_user( user_for_delete )
 	return 1
+
+# 取得 分機號碼 的輸入
+def get_users_input():
+	# 讓使用者輸入分機號碼
+	var.users_input_1 = raw_input("原來的分機號碼：")
+	var.users_input_2 = raw_input("修改後的分機號碼：")
+	# 檢查輸入的分機號碼有沒有太誇大
+	debug_num_list = str(var.users_input_1)+" "+str(var.users_input_2)
+	if not check_num_format( 'users', debug_num_list ):
+		print '[-] 分機號碼輸入錯誤'
+		return 0
+	var.users_input_1 = var.users_input_1.split(' ')
+	var.users_input_2 = var.users_input_2.split(' ')
+
+# 數字的格式檢查，參數為 "檢查的號碼類型" 與 "號碼列表"
+def check_num_format( num_type, debug_num_list ):
+	if num_type == 'users':
+		debug_num_list = debug_num_list.split(' ')
+		for user in debug_num_list:
+			if( int(user)>=100000000 or int(user)<=99 ):
+				return 0
+		return 1
+
+# 讀取 分機號碼 設定資料
+def read_user_settings( user ):# 引用全域變數
+	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
+	cmd = ''
+	cmd += var.gotousers+'consult'+e+d+e+'she'+(e*5)+v+d+d+user+v
+	print '[+] 讀取 '+user+' 的資料'
+	telnet_cmd( cmd, sleep=0.01 )
+	cmd = c*4
+	telnet_cmd( cmd )
+	result = var.tn.read_until('csa')
+	return result
 
 def delete_user( user_for_delete ):
 	# 引用全域變數
@@ -191,15 +221,15 @@ def get_user_info(string,info):
 		tmp = string.split('Entity Number : ')
 		tmp = tmp[1].split('[')
 		result += tmp[0][:-1]
-
 	return result
 
+# 第一階段，常遇到的錯誤訊息偵測
 def error_dectect(string):
-	result=0
+	error=0
 	tmp = string.split('no Such Object Instance')
 	if len(tmp)>1:
-		result = '分機號碼錯誤'
-	return result
+		error = '分機號碼錯誤'
+	return error
 
 
 

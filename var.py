@@ -34,6 +34,7 @@ page_end = 'qqj'
 def modify_user( user, address='', user_type='', entity='' ):
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
+	tn = var.tn
 	cmd = var.gotousers+'consult'+e+d+e
 	# 先將所有設定選項都準備好
 	if address!='':
@@ -53,9 +54,18 @@ def modify_user( user, address='', user_type='', entity='' ):
 	if entity!='':
 		cmd+=(b*3)+entity
 	# 輸入完成，執行
-	cmd+=v*2
+	cmd+=v
 	telnet_cmd( cmd, sleep=0.01 )
+	# 偵測成功回應
+	try:
+		res = tn.read_until('succeeded', timeout=1)
+	except:
+		error_dectect()
+	cmd = v
+	telnet_cmd( cmd, tn )
+	# 錯誤訊息偵測
 	# 回到初始畫面
 	cmd = c*3
 	telnet_cmd( cmd )
+	tn.read_until('csa')
 

@@ -167,7 +167,7 @@ def profile_user( old, new, data='', key='' ):
 	cmd = c*3
 	telnet_cmd( cmd )
 	var.tn.read_until('csa')
-
+'''
 def setting_users_ports( user_port_list, tn ):
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
@@ -192,7 +192,7 @@ def setting_users_ports( user_port_list, tn ):
 	cmd = c*3
 	telnet_cmd( cmd, tn )
 	tn.read_until('csa')
-
+'''
 def read_user_info():
 	print 'read user info :'
 	for user in var.user_info_list:
@@ -224,11 +224,18 @@ def get_user_info(string,info):
 	return result
 
 # 第一階段，常遇到的錯誤訊息偵測
-def error_dectect(string):
+def error_dectect(string=''):
 	error=0
 	tmp = string.split('no Such Object Instance')
 	if len(tmp)>1:
 		error = '分機號碼錯誤'
+
+	try:
+		res = tn.read_until('Invalid', timeout=1)
+		print '[-] Invalid'
+	except EOFError as e:
+		print '[-] timeout ERROR'
+
 	return error
 
 

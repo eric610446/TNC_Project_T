@@ -7,7 +7,7 @@ import func
 if __name__=="__main__":
 	func.telnet_connect()
 	if func.menu():
-		print '§¹¦¨'
+		print 'å®Œæˆ'
 	else:
-		print '¥¢±Ñ'
+		print 'å¤±æ•—'
 

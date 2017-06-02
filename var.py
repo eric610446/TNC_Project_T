@@ -18,8 +18,8 @@ users_input_2 = ''
 gotousers = 'mgr -l GEA\r\nuser\r\n'
 goto_profile_create = 'mgr -l GEA\r\nprofile\r\ncreate\r\n'
 
-user_info_list = []
 # [ [user, address, type, entity], [user, address, type, entity], ... ]
+user_info_list = {}
 
 e = '\r\n'
 c = '\003'
@@ -31,41 +31,10 @@ r = '\033OC'
 b = '\b'
 page_end = 'qqj'
 
-def modify_user( user, address='', user_type='', entity='' ):
-	# å¼•ç”¨å…¨åŸŸè®Šæ•¸
-	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
-	tn = var.tn
-	cmd = var.gotousers+'consult'+e+d+e
-	# å…ˆå°‡æ‰€æœ‰è¨­å®šé¸é …éƒ½æº–å‚™å¥½
-	if address!='':
-		cmd+='she'+(e*3)
-	if user_type!='':
-		cmd+='type'+e
-	if entity!='':
-		cmd+='entity'+e
-	cmd+=v+(d*2)
-	# å°‡è¨­å®šå…§å®¹è¼¸å…¥åˆ°ä½¿ç”¨è€…
-	cmd+=user+v
-	if address!='':
-		address = address.split('-')
-		cmd+=(b*3)+address[0]+d+(b*3)+address[1]+d+(b*3)+address[0]+d
-	if user_type!='':
-		cmd+=e+user_type+e+d
-	if entity!='':
-		cmd+=(b*3)+entity
-	# è¼¸å…¥å®Œæˆï¼ŒåŸ·è¡Œ
-	cmd+=v
-	telnet_cmd( cmd, sleep=0.01 )
-	# åµæ¸¬æˆåŠŸå›æ‡‰
-	try:
-		res = tn.read_until('succeeded', timeout=1)
-	except:
-		error_dectect()
-	cmd = v
-	telnet_cmd( cmd, tn )
-	# éŒ¯èª¤è¨Šæ¯åµæ¸¬
-	# å›åˆ°åˆå§‹ç•«é¢
-	cmd = c*3
-	telnet_cmd( cmd )
-	tn.read_until('csa')
 
+'''
+# read_until('succeeded', timeout=0.1)
+·|Åª¨ú©Ò¦³ªº¦^¶Ç telnet ¦r¦ê¡Aª½¨ì§ä¨ì²Ä¤@­Ó succeeded¡A©Î¬O¹L¤F 0.1 ¬í
+©Ò¥H¦pªG¨S¦³¥X²{ succeeded ÁÙ¬O·|Åª¨ú©Ò¦³ªº¦^ÂĞ¡A¦Ó¥BÅª¨ú§¹¤§«á¡A¦b read_until ¤@¦¸´NÅª¨ú¤£¨ìªF¦è¤F¡A¦]¬°³£¤w¸g³QÅª¨ú§¹¤F¡C
+¹ï try except ¨Ó»¡¡Aread_until ªº timeout ¨ì¤F¤£·|ºâ¬O exception
+'''

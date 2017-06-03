@@ -34,7 +34,7 @@ page_end = 'qqj'
 
 '''
 # read_until('succeeded', timeout=0.1)
-·|Åª¨ú©Ò¦³ªº¦^¶Ç telnet ¦r¦ê¡Aª½¨ì§ä¨ì²Ä¤@­Ó succeeded¡A©Î¬O¹L¤F 0.1 ¬í
-©Ò¥H¦pªG¨S¦³¥X²{ succeeded ÁÙ¬O·|Åª¨ú©Ò¦³ªº¦^ÂĞ¡A¦Ó¥BÅª¨ú§¹¤§«á¡A¦b read_until ¤@¦¸´NÅª¨ú¤£¨ìªF¦è¤F¡A¦]¬°³£¤w¸g³QÅª¨ú§¹¤F¡C
-¹ï try except ¨Ó»¡¡Aread_until ªº timeout ¨ì¤F¤£·|ºâ¬O exception
+æœƒè®€å–æ‰€æœ‰çš„å›å‚³ telnet å­—ä¸²ï¼Œç›´åˆ°æ‰¾åˆ°ç¬¬ä¸€å€‹ succeededï¼Œæˆ–æ˜¯éäº† 0.1 ç§’
+æ‰€ä»¥å¦‚æœæ²’æœ‰å‡ºç¾ succeeded é‚„æ˜¯æœƒè®€å–æ‰€æœ‰çš„å›è¦†ï¼Œè€Œä¸”è®€å–å®Œä¹‹å¾Œï¼Œåœ¨ read_until ä¸€æ¬¡å°±è®€å–ä¸åˆ°æ±è¥¿äº†ï¼Œå› ç‚ºéƒ½å·²ç¶“è¢«è®€å–å®Œäº†ã€‚
+å° try except ä¾†èªªï¼Œread_until çš„ timeout åˆ°äº†ä¸æœƒç®—æ˜¯ exception
 '''

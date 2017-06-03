@@ -76,7 +76,6 @@ def change_user_num():
 			continue
 	# 將有產生錯誤的 user 踢掉
 	for user in error_user_list:
-		print user
 		var.user_info_list.pop(user, None)
 
 	# 如果沒有抓到任何一支分機的資料，回傳 0
@@ -86,7 +85,7 @@ def change_user_num():
 	# 拷貝新分機
 	profile_data = var.user_info_list
 	profile_user( profile_data )
-
+	print var.user_info_list
 
 	'''
 	delete_user( user_for_delete )
@@ -288,6 +287,7 @@ def profile_user( data='', key='' ):
 	cmd = var.goto_profile_create
 	telnet_cmd( cmd )
 	res = tn.read_until('Create: Profiled Users')
+	error_user_list=[]
 	for user in data:
 		print '\n\n\n\n\t>>>>>>  複製分機 '+user+' 為分機 '+data[user]['new_number']+' <<<<<<'
 		cmd = u*16+d+(b*8)+data[user]['new_number']
@@ -323,38 +323,19 @@ def profile_user( data='', key='' ):
 		error = response_identify( res, 'succeeded' )
 		if error:
 			print '\n\t[-] 從 '+user+' profile 一個新分機 '+ data[user]['new_number'] + ' 時發生錯誤：' + error
-
+			error_user_list.append(user)
 		cmd = v
 		telnet_cmd( cmd )
+
+	# 將有產生錯誤的 user 踢掉
+	for user in error_user_list:
+		var.user_info_list.pop(user, None)
+
 	cmd = c*3
 	telnet_cmd( cmd )
 	tn.read_until('csa')
-'''
-def setting_users_ports( user_port_list, tn ):
-	# 引用全域變數
-	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
 
-	cmd = var.gotousers+'consult'+e+d+e+'she'+(e*3)+v+(d*2)
-	telnet_cmd( cmd, tn )
-	for user in user_port_list:
-		address = user[1].split('-')
-		cmd = b*8+user[0]+v+(b*8)+address[0]+d+(b*8)+address[1]+d+(b*8)+address[2]+v
-		telnet_cmd( cmd, tn )
-		try:
-			res = tn.read_until('succeeded', timeout=1)
-			cmd = v
-		except:
-			try:
-				res = tn.read_until('Invalid', timeout=1)
-				print '[-] '+user[0]+' 設定 address '+user[1]+' : Invalid physical address'
-			except EOFError as e:
-				print '[-] '+user[0]+' 設定 address '+user[1]+' timeout ERROR'
-		telnet_cmd( cmd, tn )
 
-	cmd = c*3
-	telnet_cmd( cmd, tn )
-	tn.read_until('csa')
-'''
 def read_user_info():
 	print '\n\tread user info :'
 	for user in var.user_info_list:

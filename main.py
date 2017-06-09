@@ -6,8 +6,8 @@ import os
 
 
 if __name__=="__main__":
-	func.telnet_connect()
 	while True:
+		func.telnet_connect()
 		r = func.menu()
 		if r == 'exit':
 			break
@@ -15,5 +15,6 @@ if __name__=="__main__":
 			print '\n'
 		else:
 			print '\n'
+		var.tn.close()
 		os.system('pause')
 		os.system('cls')

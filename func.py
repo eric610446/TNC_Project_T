@@ -25,14 +25,18 @@ def telnet_cmd(cmd_list, tn='', sleep=0):
 
 def menu():
 	print "\n\t1. 修改分機號碼"
+	print "\n\t2. 刪除分機號碼"
 	print "\n\t0. 結束"
 	var.menu_choice = input("\n\t選擇: ")
 	if var.menu_choice==0:
 		return 'exit'
 	if var.menu_choice==1:
-		if not change_user_num():
-			return 0
-	return 1
+		if change_user_num():
+			return 1
+	if var.menu_choice==2:
+		if delete_users():
+			return 1
+	return 0
 
 def change_user_num():
 	os.system('cls')
@@ -40,7 +44,7 @@ def change_user_num():
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
 	# 讓使用者輸入分機號碼
-	get_users_input()
+	get_users_input('change_user_num')
 	user_num_1 = var.users_input_1
 	user_num_2 = var.users_input_2
 	# log
@@ -55,7 +59,6 @@ def change_user_num():
 		i+=1
 
 	# 針對每一個分機去取得 address, type, entity 三個資料，並將原 user 的 address 設為 255-255-255
-	error_user_list = []
 	for user in var.user_info_list:
 		print '\n\n\n\n\t>>>>>>  讀取分機 '+user+' 設定並登出  <<<<<<'
 
@@ -64,7 +67,7 @@ def change_user_num():
 		if error:
 			# 如果在這邊讀取設定失敗了，要把 user 踢出修改分機號碼的清單，var.user_info_list
 			print '\n\t[-] 在讀取分機 '+user+' 的設定時發生錯誤 : '+error
-			error_user_list.append(user)
+			var.error_user_list.append(user)
 			continue
 
 		# 將要修改分機號碼的使用者 port 改為 255
@@ -72,10 +75,10 @@ def change_user_num():
 		if error:
 			# 如果在這邊讀取設定失敗了，要把 user 踢出修改分機號碼的清單，var.user_info_list
 			print '\n\t[-] 在 logout 分機 '+user+' 時發生錯誤 : '+error
-			error_user_list.append(user)
+			var.error_user_list.append(user)
 			continue
 	# 將有產生錯誤的 user 踢掉
-	for user in error_user_list:
+	for user in var.error_user_list:
 		var.user_info_list.pop(user, None)
 
 	# 如果沒有抓到任何一支分機的資料，回傳 0
@@ -85,25 +88,38 @@ def change_user_num():
 	# 拷貝新分機
 	profile_data = var.user_info_list
 	profile_user( profile_data )
-	print var.user_info_list
+	# 將有產生錯誤的 user 踢掉
+	for user in var.error_user_list:
+		var.user_info_list.pop(user, None)
 
-	'''
+	user_for_delete = var.user_info_list
 	delete_user( user_for_delete )
-	'''
-	return 1
+
+	return 0
 
 # 取得 分機號碼 的輸入
-def get_users_input():
-	# 讓使用者輸入分機號碼
-	var.users_input_1 = raw_input("\n\t原來的分機號碼：")
-	var.users_input_2 = raw_input("\n\t修改後的分機號碼：")
-	# 檢查輸入的分機號碼有沒有太誇大
-	debug_num_list = str(var.users_input_1)+" "+str(var.users_input_2)
+def get_users_input( function ):
+	if function=='change_user_num':
+		# 讓使用者輸入分機號碼
+		var.users_input_1 = raw_input("\n\t原來的分機號碼：")
+		var.users_input_2 = raw_input("\n\t修改後的分機號碼：")
+		# 檢查輸入的分機號碼有沒有太誇大
+		debug_num_list = str(var.users_input_1)+" "+str(var.users_input_2)
+	elif function=='delete_users':
+		# 讓使用者輸入分機號碼
+		var.users_input_1 = raw_input("\n\t要刪除的分機號碼：")
+		# 檢查輸入的分機號碼有沒有太誇大
+		debug_num_list = str(var.users_input_1)
+
 	if not check_num_format( 'users', debug_num_list ):
 		print '\n\t[-] 分機號碼輸入錯誤'
 		return 0
-	var.users_input_1 = var.users_input_1.split(' ')
-	var.users_input_2 = var.users_input_2.split(' ')
+
+	if function=='change_user_num':
+		var.users_input_1 = var.users_input_1.split(' ')
+		var.users_input_2 = var.users_input_2.split(' ')
+	elif function=='delete_users':
+		var.users_input_1 = var.users_input_1.split(' ')
 
 # 數字的格式檢查，參數為 "檢查的號碼類型" 與 "號碼列表"
 def check_num_format( num_type, debug_num_list ):
@@ -142,10 +158,10 @@ def modify_user( user, address='', user_type='', entity='' ):
 	telnet_cmd( cmd )
 
 	# 先讀到 running 頁面，以確保接下來顯示的是結果
-	res = tn.read_until('running', timeout=1)
+	res = tn.read_until('running', timeout=3)
 	res = tn.read_until(page_end, timeout=0.01)
 	# 接下來讀取結果頁面
-	res = tn.read_until('Directory Number', timeout=1)
+	res = tn.read_until('Directory Number', timeout=3)
 	if len(res.split('Directory Number'))>1:
 		res = tn.read_until(page_end, timeout=0.01)
 
@@ -163,7 +179,7 @@ def modify_user( user, address='', user_type='', entity='' ):
 	if user_type!='':
 		cmd+=e+user_type+e+d
 	if entity!='':
-		cmd+=(b*3)+entity
+		cmd+=(b*3)+entity+d
 
 	# 輸入完成，執行
 	cmd+=v
@@ -172,12 +188,10 @@ def modify_user( user, address='', user_type='', entity='' ):
 	cmd = ''
 	if info_change:
 		# 先讀到 running 頁面，以確保接下來顯示的是結果
-		res = tn.read_until('running', timeout=1)
+		res = tn.read_until('running', timeout=3)
 		res = tn.read_until(page_end, timeout=0.01)
 		# 接下來讀取結果頁面
-		res = tn.read_until('succeeded', timeout=1)
-		if len(res.split('succeeded'))>1:
-			res = tn.read_until(page_end, timeout=0.01)
+		res = tn.read_until('succeeded', timeout=3)
 
 		# 檢查有沒有錯誤
 		error = response_identify( res, 'succeeded' )
@@ -205,7 +219,7 @@ def read_user_settings( user ):# 引用全域變數
 	telnet_cmd( cmd )
 
 	# 讀取到 Consult/Modify: Users 頁面
-	res = tn.read_until('Consult/Modify: Users')
+	res = tn.read_until('All instances')
 	# 再讀取到 Consult/Modify: Users 頁尾
 	res = tn.read_until(page_end, timeout=0.01)
 
@@ -214,10 +228,10 @@ def read_user_settings( user ):# 引用全域變數
 	telnet_cmd( cmd )
 
 	# 先讀到 running 頁面，以確保接下來顯示的是結果
-	res = tn.read_until('running', timeout=1)
+	res = tn.read_until('running', timeout=3)
 	res = tn.read_until(page_end, timeout=0.01)
 	# 接下來讀取結果頁面
-	res = tn.read_until('Directory Number', timeout=1)
+	res = tn.read_until('Directory Number', timeout=3)
 	if len(res.split('Directory Number'))>1:
 		res = tn.read_until(page_end, timeout=0.01)
 
@@ -246,28 +260,39 @@ def read_user_settings( user ):# 引用全域變數
 
 	return 0
 
-def delete_user( user_for_delete ):
+def delete_user( user_for_delete, msg_timeout=3 ):
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end, tn = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end, var.tn
 	cmd = var.gotousers+'delete'+e+d
 	telnet_cmd( cmd )
 	for user in user_for_delete:
+		print '\n\n\n\n\t>>>>>>  刪除分機 '+user+'  <<<<<<'
 		cmd = b*8+user+v
 		telnet_cmd( cmd )
-		try:
-			res = tn.read_until('succeeded', timeout=1)
-		except:
-			try:
-				res = tn.read_until('no Such Object', timeout=1)
-				print '\n\t[-] Delete '+user+' 分機號碼不存在'
-			except:
-				try:
-					res = tn.read_until('Bad value', timeout=1)
-					print '\n\t[-] Delete '+user+' Bad value'
-				except:
-					print '\n\t[-] Delete '+user+' timeout'
+		# 先讀到 running 頁面，以確保接下來顯示的是結果
+		res = tn.read_until('running', timeout=msg_timeout)
+		res = tn.read_until(page_end, timeout=0.01)
+		# 接下來讀取結果頁面
+		res = tn.read_until('succeeded', timeout=msg_timeout)
+		# 檢查有沒有錯誤
+		error = response_identify( res, 'succeeded' )
+		if error:
+			print '\n\t[-] 刪除分機 '+user+' 時發生錯誤：' + error
+			var.error_user_list.append(user)
 		cmd = v
 		telnet_cmd( cmd )
+
+def delete_users():
+	os.system('cls')
+	print '\n\n\t\t[ 刪除分機號碼 ]\n\t'+'-'*80
+	# 引用全域變數
+	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
+	# 讓使用者輸入分機號碼
+	get_users_input('delete_users')
+	user_num_1 = var.users_input_1
+	delete_user(user_num_1, 3)
+
+	return 0
 
 '''
 {'4101':
@@ -280,14 +305,12 @@ def delete_user( user_for_delete ):
 ...}
 '''
 def profile_user( data='', key='' ):
-	print '\n\t[+] porfile user '
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end, tn = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end, var.tn
 
 	cmd = var.goto_profile_create
 	telnet_cmd( cmd )
 	res = tn.read_until('Create: Profiled Users')
-	error_user_list=[]
 	for user in data:
 		print '\n\n\n\n\t>>>>>>  複製分機 '+user+' 為分機 '+data[user]['new_number']+' <<<<<<'
 		cmd = u*16+d+(b*8)+data[user]['new_number']
@@ -298,13 +321,16 @@ def profile_user( data='', key='' ):
 			cmd += (d*3)
 			if 'user_type' in data[user]:
 				cmd += e+data[user]['user_type']+e
+				print '\n\t[+] 設定分機 type 為 '+data[user]['user_type']
 			cmd += d
 			if 'user_entity' in data[user]:
 				cmd += (b*8)+data[user]['user_entity']
+				print '\n\t[+] 設定分機 entiy 為 '+data[user]['user_entity']
 			cmd += d
 			if 'user_address' in data[user]:
 				addr = data[user]['user_address'].split('-')
 				cmd += (b*8)+addr[0]+d+(b*8)+addr[1]+d+(b*8)+addr[2]
+				print '\n\t[+] 設定分機 address 為 '+data[user]['user_address']
 			cmd += d
 			cmd += (b*8)+user+d
 			if data[user]['user_type']!='analog':
@@ -312,24 +338,17 @@ def profile_user( data='', key='' ):
 		cmd += v
 		telnet_cmd( cmd )
 		# 先讀到 running 頁面，以確保接下來顯示的是結果
-		res = tn.read_until('running', timeout=1)
+		res = tn.read_until('running', timeout=3)
 		res = tn.read_until(page_end, timeout=0.01)
 		# 接下來讀取結果頁面
-		res = tn.read_until('succeeded', timeout=1)
-		if len(res.split('succeeded'))>1:
-			res = tn.read_until(page_end, timeout=0.01)
-
+		res = tn.read_until('succeeded', timeout=3)
 		# 檢查有沒有錯誤
 		error = response_identify( res, 'succeeded' )
 		if error:
 			print '\n\t[-] 從 '+user+' profile 一個新分機 '+ data[user]['new_number'] + ' 時發生錯誤：' + error
-			error_user_list.append(user)
+			var.error_user_list.append(user)
 		cmd = v
 		telnet_cmd( cmd )
-
-	# 將有產生錯誤的 user 踢掉
-	for user in error_user_list:
-		var.user_info_list.pop(user, None)
 
 	cmd = c*3
 	telnet_cmd( cmd )
@@ -406,21 +425,15 @@ def response_identify(string='', expect=''):
 		error = '參考分機輸入錯誤 Station Profile From 錯誤'
 		return error
 
+	# Software Protection
+	tmp = string.split('Software Protection')
+	if len(tmp)>1:
+		tmp = tmp[0].split('ATTRIBUTE 0:')
+		error = '在執行動作時發生軟體授權不足的問題：'+tmp[1]
+
 	# 未知錯誤
 	print '\n\t[-] 發生未知的錯誤'
 	#return '\n'*10+string+'\n'*10
 	return '\n\tretrun 發生未知的錯誤'
 
-	'''
-	if not error:
-		try:
-			res = tn.read_until('Facilities', timeout=1)
-			print res
-		except:
-			try:
-				res = tn.read_until('Invalid', timeout=1)
-				print '[-] Invalid'
-			except EOFError as e:
-				print '[-] timeout ERROR'
-	'''
 	return error

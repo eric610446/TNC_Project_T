@@ -21,6 +21,10 @@ goto_profile_create = 'mgr -l GEA\r\nprofile\r\ncreate\r\n'
 # [ [user, address, type, entity], [user, address, type, entity], ... ]
 user_info_list = {}
 
+error_user_list = []
+
+splited_num = ''
+
 e = '\r\n'
 c = '\003'
 v = '\026'
@@ -30,7 +34,6 @@ l = '\033OD'
 r = '\033OC'
 b = '\b'
 page_end = 'qqj'
-
 
 '''
 # read_until('succeeded', timeout=0.1)

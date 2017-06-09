@@ -20,6 +20,7 @@ goto_profile_create = 'mgr -l GEA\r\nprofile\r\ncreate\r\n'
 
 # [ [user, address, type, entity], [user, address, type, entity], ... ]
 user_info_list = {}
+user_info_list_now = {}
 
 error_user_list = []
 

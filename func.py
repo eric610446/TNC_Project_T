@@ -90,6 +90,13 @@ def change_user_num():
 	profile_user( profile_data )
 	# 將有產生錯誤的 user 踢掉
 	for user in var.error_user_list:
+		print '\n\t[+] 將在 profile user 發生錯誤的原來分機還原 address'
+		error = modify_user( user, var.user_info_list[user]['user_address'] )
+		if error:
+			# 如果在這邊讀取設定失敗了，要把 user 踢出修改分機號碼的清單，var.user_info_list
+			print '\n\t[-] 在還原分機 '+user+' 的 address 時發生錯誤 : '+error
+			var.error_user_list.append(user)
+			continue
 		var.user_info_list.pop(user, None)
 
 	user_for_delete = var.user_info_list
@@ -103,15 +110,26 @@ def get_users_input( function ):
 		# 讓使用者輸入分機號碼
 		var.users_input_1 = raw_input("\n\t原來的分機號碼：")
 		var.users_input_2 = raw_input("\n\t修改後的分機號碼：")
+		# 將範圍數字改為單一數字
+		var.users_input_1 = range_2_single(var.users_input_1)
+		var.users_input_2 = range_2_single(var.users_input_2)
+		if var.users_input_1==0 or var.users_input_2==0:
+			return 0
+		if len(var.users_input_1)!=len(var.users_input_2):
+			print '\n\t[-] 輸入分機號碼數量不一致'
+			return 0
 		# 檢查輸入的分機號碼有沒有太誇大
 		debug_num_list = str(var.users_input_1)+" "+str(var.users_input_2)
 	elif function=='delete_users':
 		# 讓使用者輸入分機號碼
 		var.users_input_1 = raw_input("\n\t要刪除的分機號碼：")
+		# 將範圍數字改為單一數字
+		var.users_input_1 = range_2_single(var.users_input_1)
+		if var.users_input_1==0:
+			return 0
 		# 檢查輸入的分機號碼有沒有太誇大
 		debug_num_list = str(var.users_input_1)
-
-	if not check_num_format( 'users', debug_num_list ):
+	if check_num_format( 'users', debug_num_list ):
 		print '\n\t[-] 分機號碼輸入錯誤'
 		return 0
 
@@ -121,14 +139,34 @@ def get_users_input( function ):
 	elif function=='delete_users':
 		var.users_input_1 = var.users_input_1.split(' ')
 
+# 將範圍數字改為單一數字 ( 100-110 105 120-130 )
+# 發生錯誤回傳 0，正確回傳分解出單一數字的字串，以空格做分隔，如 100 101 102 ...
+def range_2_single( input_num ):
+	tmp = input_num.split(' ')
+	result = ''
+	for range_num in tmp:
+		min_max = range_num.split('-')
+		if len(min_max)==1:
+			result += range_num+' '
+			continue
+		elif len(min_max)!=2:
+			continue
+		if min_max[0]>min_max[1]:
+			print '數字範圍格式輸入錯誤 小-大 如: 100-110'
+			return 0
+		for num in range(int(min_max[0]), int(min_max[1])+1):
+			result += str(num)+' '
+	result = result[0:-1]
+	return result
+
 # 數字的格式檢查，參數為 "檢查的號碼類型" 與 "號碼列表"
 def check_num_format( num_type, debug_num_list ):
 	if num_type == 'users':
 		debug_num_list = debug_num_list.split(' ')
 		for user in debug_num_list:
-			if( int(user)>=100000000 or int(user)<=99 ):
-				return 0
-		return 1
+			if int(user)>=100000000 or int(user)<=99:
+				return 1
+		return 0
 
 def modify_user( user, address='', user_type='', entity='' ):
 	log = '\n\t[+] 設定分機 '+user
@@ -164,13 +202,11 @@ def modify_user( user, address='', user_type='', entity='' ):
 	res = tn.read_until('Directory Number', timeout=3)
 	if len(res.split('Directory Number'))>1:
 		res = tn.read_until(page_end, timeout=0.01)
-
 	# 檢查有沒有錯誤
 	error = response_identify( res, user )
 	if error:
 		print '\n\t[-] '+user+' '+error
 		return error
-
 	# 將設定內容輸入到使用者
 	cmd = ''
 	if address!='':
@@ -195,7 +231,9 @@ def modify_user( user, address='', user_type='', entity='' ):
 
 		# 檢查有沒有錯誤
 		error = response_identify( res, 'succeeded' )
+		print 'test1'
 		if error:
+			print 'test2'
 			print '\n\t[-] modify '+user+' '+error
 			# 回到指令頁面
 			cmd = c*4
@@ -204,7 +242,7 @@ def modify_user( user, address='', user_type='', entity='' ):
 			return error
 		cmd = v
 		telnet_cmd( cmd )
-
+	print 'test3'
 	# 回到指令頁面
 	cmd = c*3
 	telnet_cmd( cmd )
@@ -266,6 +304,7 @@ def delete_user( user_for_delete, msg_timeout=3 ):
 	cmd = var.gotousers+'delete'+e+d
 	telnet_cmd( cmd )
 	for user in user_for_delete:
+		res = tn.read_until('Delete: Users')
 		print '\n\n\n\n\t>>>>>>  刪除分機 '+user+'  <<<<<<'
 		cmd = b*8+user+v
 		telnet_cmd( cmd )
@@ -290,7 +329,7 @@ def delete_users():
 	# 讓使用者輸入分機號碼
 	get_users_input('delete_users')
 	user_num_1 = var.users_input_1
-	delete_user(user_num_1, 3)
+	delete_user(user_num_1, 0.1)
 
 	return 0
 
@@ -393,7 +432,7 @@ def response_identify(string='', expect=''):
 	# 偵測成功訊息
 	tmp = string.split(expect)
 	if len(tmp)>1:
-		return error
+		return 0
 
 	# no Such Object Instance
 	tmp = string.split('no Such Object Instance')
@@ -405,6 +444,12 @@ def response_identify(string='', expect=''):
 	tmp = string.split('already exists')
 	if len(tmp)>1:
 		error = '分機號碼已經存在了'
+		return error
+
+	# Address already used
+	tmp = string.split('Address already used')
+	if len(tmp)>1:
+		error = '分機 address 已經有被使用了'
 		return error
 
 	# Invalid translator number

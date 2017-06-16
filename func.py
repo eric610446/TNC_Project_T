@@ -3,6 +3,7 @@
 import var
 import telnetlib
 import time
+import copy
 import os
 
 def telnet_connect():
@@ -31,9 +32,11 @@ def menu():
 	if var.menu_choice==0:
 		return 'exit'
 	if var.menu_choice==1:
+		var.initial_var()
 		if change_user_num():
 			return 1
 	if var.menu_choice==2:
+		var.initial_var()
 		if delete_users():
 			return 1
 	return 0
@@ -44,13 +47,11 @@ def change_user_num():
 	# 引用全域變數
 	e, c, v, u, d, l, r, b, page_end = var.e, var.c, var.v, var.u, var.d, var.l, var.r, var.b, var.page_end
 	# 讓使用者輸入分機號碼
-	get_users_input('change_user_num')
+	if not get_users_input('change_user_num'):
+		print '\n\t[-] 取得使用者輸入錯誤'
+		return '取得使用者輸入錯誤'
 	user_num_1 = var.users_input_1
 	user_num_2 = var.users_input_2
-	# log
-	#print '\n\t[*] user_num_1 : ',user_num_1
-	#print '\n\t[*] user_num_2 : ',user_num_2
-
 	# 將 profile data 每個 user1 對應到自己的 user2 號碼
 	i=0
 	for user in user_num_1:
@@ -58,10 +59,9 @@ def change_user_num():
 		var.user_info_list[user]['new_number'] = user_num_2[i]
 		i+=1
 
-	# 針對每一個分機去取得 address, type, entity 三個資料，並將原 user 的 address 設為 255-255-255
+	# 針對每一個分機去取得 address, type, entity 三個資料
 	for user in var.user_info_list:
-		print '\n\n\n\n\t>>>>>>  讀取分機 '+user+' 設定並登出  <<<<<<'
-
+		print '\n\n\n\n\t>>>>>>  讀取分機 '+user+' 設定  <<<<<<'
 		# 閱覽分機號碼設定
 		error = read_user_settings( user )
 		if error:
@@ -70,6 +70,15 @@ def change_user_num():
 			var.error_user_list.append(user)
 			continue
 
+	# 將有產生錯誤的 user 踢掉
+	for user in var.error_user_list:
+		var.user_info_list_now.pop(user, None)
+		var.user_info_list.pop(user, None)
+	var.error_user_list=[]
+
+	# 將原 user 的 address 設為 255-255-255
+	for user in var.user_info_list:
+		print '\n\n\n\n\t>>>>>>  登出分機 '+user+'  <<<<<<'
 		# 將要修改分機號碼的使用者 port 改為 255
 		error = modify_user( user, address='255-255-255' )
 		if error:
@@ -77,25 +86,28 @@ def change_user_num():
 			print '\n\t[-] 在 logout 分機 '+user+' 時發生錯誤 : '+error
 			var.error_user_list.append(user)
 			continue
+
 	# 將有產生錯誤的 user 踢掉
 	for user in var.error_user_list:
+		var.user_info_list_now.pop(user, None)
 		var.user_info_list.pop(user, None)
+	var.error_user_list=[]
 
 	# 如果沒有抓到任何一支分機的資料，回傳 0
 	if not bool(var.user_info_list):
 		return 0
 
 	# 拷貝新分機
-	profile_data = var.user_info_list
+	profile_data = copy.deepcopy(var.user_info_list)
 	profile_user( profile_data )
-	# 將有產生錯誤的 user 踢掉
+
+	print '\n\n\n\n\t>>>>>>  [+] 將在 profile user 發生錯誤的原來分機還原 address  <<<<<'
 	for user in var.error_user_list:
-		print '\n\t[+] 將在 profile user 發生錯誤的原來分機還原 address'
 		error = modify_user( user, var.user_info_list[user]['user_address'] )
 		if error:
 			# 如果在這邊讀取設定失敗了，要把 user 踢出修改分機號碼的清單，var.user_info_list
 			print '\n\t[-] 在還原分機 '+user+' 的 address 時發生錯誤 : '+error
-			var.error_user_list.append(user)
+			var.user_info_list.pop(user, None)
 			continue
 		var.user_info_list.pop(user, None)
 
@@ -115,7 +127,8 @@ def get_users_input( function ):
 		var.users_input_2 = range_2_single(var.users_input_2)
 		if var.users_input_1==0 or var.users_input_2==0:
 			return 0
-		if len(var.users_input_1)!=len(var.users_input_2):
+		# 檢查分機號碼數量有沒有一樣，要加入 split，否則只會測量字串的字元數，在變更分機號碼長度時會發生錯誤
+		if len(var.users_input_1.split(' '))!=len(var.users_input_2.split(' ')):
 			print '\n\t[-] 輸入分機號碼數量不一致'
 			return 0
 		# 檢查輸入的分機號碼有沒有太誇大
@@ -139,6 +152,8 @@ def get_users_input( function ):
 	elif function=='delete_users':
 		var.users_input_1 = var.users_input_1.split(' ')
 
+	return 1
+
 # 將範圍數字改為單一數字 ( 100-110 105 120-130 )
 # 發生錯誤回傳 0，正確回傳分解出單一數字的字串，以空格做分隔，如 100 101 102 ...
 def range_2_single( input_num ):
@@ -150,9 +165,10 @@ def range_2_single( input_num ):
 			result += range_num+' '
 			continue
 		elif len(min_max)!=2:
-			continue
+			print '\n\t[-] 數字範圍格式輸入錯誤 如: 100-110-'
+			return 0
 		if min_max[0]>min_max[1]:
-			print '數字範圍格式輸入錯誤 小-大 如: 100-110'
+			print '\n\t[-] 數字範圍格式輸入錯誤 小-大 如: 100-110'
 			return 0
 		for num in range(int(min_max[0]), int(min_max[1])+1):
 			result += str(num)+' '
@@ -176,73 +192,78 @@ def modify_user( user, address='', user_type='', entity='' ):
 
 	# 先將所有設定選項都準備好
 	info_change = 0
-	if address!='':
+	# 如果參數有輸入，而且要修改的內容與現在的設定有不同，則把紀錄有產生變化的變數設定為 1
+	if address!='' and address!=var.user_info_list_now[user]['user_address']:
 		log += ' address='+address
+		info_change = 1
 		cmd+='she'+(e*3)
-		if address!=var.user_info_list[user]['user_address']:
-			info_change = 1
-	if user_type!='':
+	if user_type!='' and user_type!=var.user_info_list_now[user]['user_type']:
 		log += ' user_type='+user_type
+		info_change = 1
 		cmd+='type'+e
-		if user_type!=var.user_info_list[user]['user_type']:
-			info_change = 1
-	if entity!='':
+	if entity!='' and entity!=var.user_info_list_now[user]['user_entity']:
 		log += ' entity='+entity
+		info_change = 1
 		cmd+='entity'+e
-		if entity!=var.user_info_list[user]['user_entity']:
-			info_change = 1
-	cmd+= v+d+d+user+v
-	print log
-	telnet_cmd( cmd )
-
-	# 先讀到 running 頁面，以確保接下來顯示的是結果
-	res = tn.read_until('running', timeout=3)
-	res = tn.read_until(page_end, timeout=0.01)
-	# 接下來讀取結果頁面
-	res = tn.read_until('Directory Number', timeout=3)
-	if len(res.split('Directory Number'))>1:
-		res = tn.read_until(page_end, timeout=0.01)
-	# 檢查有沒有錯誤
-	error = response_identify( res, user )
-	if error:
-		print '\n\t[-] '+user+' '+error
-		return error
-	# 將設定內容輸入到使用者
-	cmd = ''
-	if address!='':
-		address = address.split('-')
-		cmd+=(b*3)+address[0]+d+(b*3)+address[1]+d+(b*3)+address[0]+d
-	if user_type!='':
-		cmd+=e+user_type+e+d
-	if entity!='':
-		cmd+=(b*3)+entity+d
-
-	# 輸入完成，執行
-	cmd+=v
-	telnet_cmd( cmd )
-	# 偵測成功回應
-	cmd = ''
+	# 如果有需要設定的內容，則就可以輸入 user 並進入設定頁面
 	if info_change:
+		print log
+		cmd+=v+d+d+user+v
+		telnet_cmd( cmd )
+		# 先讀到 running 頁面，以確保接下來顯示的是結果
+		res = tn.read_until('running', timeout=3)
+		res = tn.read_until(page_end, timeout=0.01)
+		# 接下來讀取結果頁面
+		res = tn.read_until('Directory Number', timeout=3)
+		if len(res.split('Directory Number'))>1:
+			res = tn.read_until(page_end, timeout=0.01)
+		# 檢查有沒有錯誤
+		error = response_identify( res, user )
+		if error:
+			print '\n\t[-] '+user+' '+error
+			return error
+		# 將設定內容輸入到使用者
+		cmd = ''
+		if address!='' and address!=var.user_info_list_now[user]['user_address']:
+			addr = address.split('-')
+			cmd+=(b*3)+addr[0]+d+(b*3)+addr[1]+d+(b*3)+addr[2]+d
+		if user_type!='' and user_type!=var.user_info_list_now[user]['user_type']:
+			cmd+=e+user_type+e+d
+		if entity!='' and entity!=var.user_info_list_now[user]['user_entity']:
+			cmd+=(b*3)+entity+d
+		# 輸入完成，執行
+		cmd+=v
+		telnet_cmd( cmd )
+		# 偵測成功回應
+		cmd = ''
+
 		# 先讀到 running 頁面，以確保接下來顯示的是結果
 		res = tn.read_until('running', timeout=3)
 		res = tn.read_until(page_end, timeout=0.01)
 		# 接下來讀取結果頁面
 		res = tn.read_until('succeeded', timeout=3)
-
 		# 檢查有沒有錯誤
 		error = response_identify( res, 'succeeded' )
-		print 'test1'
 		if error:
-			print 'test2'
 			print '\n\t[-] modify '+user+' '+error
 			# 回到指令頁面
 			cmd = c*4
 			telnet_cmd( cmd )
 			tn.read_until('csa')
 			return error
+		else:
+			if address!='' and address!=var.user_info_list_now[user]['user_address']:
+				var.user_info_list_now[user]['user_address'] = address
+			if user_type!='' and user_type!=var.user_info_list_now[user]['user_type']:
+				var.user_info_list_now[user]['user_type'] = user_type
+			if entity!='' and entity!=var.user_info_list_now[user]['user_entity']:
+				var.user_info_list_now[user]['user_entity'] = entity
 		cmd = v
 		telnet_cmd( cmd )
-	print 'test3'
+	# 如果沒有要設定的內容，則需要按 ctrl+c 跳出選單
+	else:
+		cmd+=c
+		telnet_cmd( cmd )
 	# 回到指令頁面
 	cmd = c*3
 	telnet_cmd( cmd )
@@ -276,7 +297,6 @@ def read_user_settings( user ):# 引用全域變數
 	# 檢查有沒有錯誤
 	error = response_identify( res, user )
 	if error:
-		#print '\n\t[-] '+user+' '+error
 		# 回到指令頁
 		cmd = c*4
 		telnet_cmd( cmd )
@@ -290,6 +310,10 @@ def read_user_settings( user ):# 引用全域變數
 	var.user_info_list[user]['user_type'] = get_user_info(res,'type')
 	var.user_info_list[user]['user_entity'] = get_user_info(res,'entity')
 
+	# 使用 dictionary 完整 value 複製要使用 copy.deepcopy
+	# dic1 = dic2 會互相引用 ( 參考 )
+	# dic1 = dic2.copy() 會參考第一個元素，第二個才會是各自值複製
+	var.user_info_list_now = copy.deepcopy(var.user_info_list)
 	# 回到指令頁
 	cmd = c*4
 	telnet_cmd( cmd )
@@ -372,7 +396,7 @@ def profile_user( data='', key='' ):
 				print '\n\t[+] 設定分機 address 為 '+data[user]['user_address']
 			cmd += d
 			cmd += (b*8)+user+d
-			if data[user]['user_type']!='analog':
+			if data[user]['user_type']!='ANALOG':
 				cmd += (b*8)+user
 		cmd += v
 		telnet_cmd( cmd )
@@ -474,6 +498,12 @@ def response_identify(string='', expect=''):
 	tmp = string.split('Software Protection')
 	if len(tmp)>1:
 		tmp = tmp[0].split('ATTRIBUTE 0:')
+		error = '在執行動作時發生軟體授權不足的問題：'+tmp[1]
+
+	# Lock
+	tmp = string.split('Lock')
+	if len(tmp)>1:
+		tmp = tmp[0].split('OBJECT -1: ')
 		error = '在執行動作時發生軟體授權不足的問題：'+tmp[1]
 
 	# 未知錯誤

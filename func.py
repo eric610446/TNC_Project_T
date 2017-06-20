@@ -101,7 +101,8 @@ def change_user_num():
 	profile_data = copy.deepcopy(var.user_info_list)
 	profile_user( profile_data )
 
-	print '\n\n\n\n\t>>>>>>  [+] 將在 profile user 發生錯誤的原來分機還原 address  <<<<<'
+	if bool(var.error_user_list):
+		print '\n\n\n\n\t>>>>>>  [+] 將在 profile user 發生錯誤的原來分機還原 address  <<<<<'
 	for user in var.error_user_list:
 		error = modify_user( user, var.user_info_list[user]['user_address'] )
 		if error:
